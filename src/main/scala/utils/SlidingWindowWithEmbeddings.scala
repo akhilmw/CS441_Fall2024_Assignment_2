@@ -41,7 +41,7 @@ object SlidingWindowWithEmbeddings {
   }
 
   // Function to load embeddings from embeddings.csv
-  private def loadEmbeddings(filePath: String): Map[Int, INDArray] = {
+  def loadEmbeddings(filePath: String): Map[Int, INDArray] = {
     val embeddingsMap = Source.fromFile(filePath).getLines().drop(1).map { line =>
       val parts = line.split(",")
       val tokenId = parts(0).toInt
@@ -55,7 +55,7 @@ object SlidingWindowWithEmbeddings {
 
 
   // Function to load token IDs from ordered_tokens.csv
-  private def loadTokens(filePath: String): Array[Int] = {
+  def loadTokens(filePath: String): Array[Int] = {
     val tokenIds = Source.fromFile(filePath).getLines().drop(1).flatMap { line =>
       val parts = line.split(",") // Changed delimiter to comma
       if (parts.length > 2) {
@@ -88,7 +88,7 @@ object SlidingWindowWithEmbeddings {
 
 
   // Function to create input embeddings with positional information
-  private def createInputEmbeddings(
+  def createInputEmbeddings(
                              inputTokenIds: Array[Int],
                              embeddingsMap: Map[Int, INDArray],
                              embeddingDim: Int
@@ -107,7 +107,7 @@ object SlidingWindowWithEmbeddings {
   }
 
   // Function to get the embedding vector for a token ID
-  private def getTokenEmbedding(tokenId: Int, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): INDArray = {
+  def getTokenEmbedding(tokenId: Int, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): INDArray = {
     embeddingsMap.getOrElse(tokenId, Nd4j.zeros(embeddingDim))
   }
 
