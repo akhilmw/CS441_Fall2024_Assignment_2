@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id="root [file:/Users/akhilnair/Desktop/CS441_Fall2024_Assignment_2/]" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
+<module external.linked.project.id="cs441_fall2024_assignment_2 [file:/Users/akhilnair/Desktop/CS441_Fall2024_Assignment_2/]" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_17">
     <output url="file://$MODULE_DIR$/../../target/scala-2.12/classes" />
     <output-test url="file://$MODULE_DIR$/../../target/scala-2.12/test-classes" />
@@ -324,10 +324,6 @@
     <orderEntry type="library" name="sbt: org.nd4j:nd4j-presets-common:1.0.0-M2.1:jar" level="project" />
     <orderEntry type="library" name="sbt: org.nd4j:protobuf:1.0.0-M2.1:jar" level="project" />
     <orderEntry type="library" name="sbt: org.objenesis:objenesis:2.5.1:jar" level="project" />
-    <orderEntry type="library" name="sbt: org.openjfx:javafx-base:11:jar" level="project" />
-    <orderEntry type="library" name="sbt: org.openjfx:javafx-base:11:mac:jar" level="project" />
-    <orderEntry type="library" name="sbt: org.openjfx:javafx-graphics:11:jar" level="project" />
-    <orderEntry type="library" name="sbt: org.openjfx:javafx-graphics:11:mac:jar" level="project" />
     <orderEntry type="library" name="sbt: org.ow2.asm:asm:5.0.4:jar" level="project" />
     <orderEntry type="library" name="sbt: org.roaringbitmap:RoaringBitmap:0.9.38:jar" level="project" />
     <orderEntry type="library" name="sbt: org.roaringbitmap:shims:0.9.38:jar" level="project" />

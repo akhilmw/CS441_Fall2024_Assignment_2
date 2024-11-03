@@ -5,18 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ac43c186-e233-4477-b0d3-1649eff136f2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.bsp/sbt.json" beforeDir="false" afterPath="$PROJECT_DIR$/.bsp/sbt.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2-build.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2-build.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/scala_compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/scala_compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.sbt" beforeDir="false" afterPath="$PROJECT_DIR$/build.sbt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.conf" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/utils/SlidingWindowWithEmbeddings.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/utils/SlidingWindowWithEmbeddings.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainedModel.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,26 +57,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
-    &quot;Application.SlidingWindowSpark.executor&quot;: &quot;Run&quot;,
-    &quot;Application.SlidingWindowWithEmbeddings.executor&quot;: &quot;Run&quot;,
-    &quot;Application.TrainingService.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.Main.executor": "Run",
+    "Application.SlidingWindowSpark.executor": "Run",
+    "Application.SlidingWindowWithEmbeddings.executor": "Run",
+    "Application.TrainingService.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Application.TrainingService">
     <configuration name="SlidingWindowSpark" type="Application" factoryName="Application" temporary="true">
       <option name="MAIN_CLASS_NAME" value="SlidingWindowSpark" />
@@ -104,7 +102,7 @@
       </method>
     </configuration>
     <configuration name="TrainingService" type="Application" factoryName="Application" temporary="true">
-      <option name="ALTERNATIVE_JRE_PATH" value="/opt/homebrew/Cellar/openjdk@11/11.0.23/libexec/openjdk.jdk/Contents/Home" />
+      <option name="ALTERNATIVE_JRE_PATH" value="/opt/homebrew/Cellar/openjdk@11/11.0.25/libexec/openjdk.jdk/Contents/Home" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
       <option name="MAIN_CLASS_NAME" value="services.TrainingService" />
       <module name="CS441_Fall2024_Assignment_2" />
@@ -154,6 +152,8 @@
       <workItem from="1730067755853" duration="845000" />
       <workItem from="1730235486598" duration="600000" />
       <workItem from="1730253519910" duration="3959000" />
+      <workItem from="1730499533439" duration="18989000" />
+      <workItem from="1730586690860" duration="16032000" />
     </task>
     <servers />
   </component>
