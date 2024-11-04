@@ -260,7 +260,7 @@ object TrainingService {
     val sc = spark.sparkContext
 
     // Define embedding dimension at top level
-    val embeddingDim = 50 // Set this to your embeddings' actual dimension
+    val embeddingDim = config.getInt("model.embeddingDim") // Set this to your embeddings' actual dimension
 
     // Initialize statistics collection
     val trainingStats = new StringBuilder()
@@ -305,9 +305,9 @@ object TrainingService {
     validationData.cache()
 
     // Define network hyperparameters
-    val hiddenLayerSize = 128
-    val batchSize = 32
-    val numEpochs = 5
+    val hiddenLayerSize = config.getInt("model.hiddenLayerSize")
+    val batchSize = config.getInt("model.batchSize")
+    val numEpochs = config.getInt("model.numEpochs")
 
     val tm = new ParameterAveragingTrainingMaster.Builder(batchSize)
       .averagingFrequency(5)
@@ -435,12 +435,6 @@ object TrainingService {
     // Log average time per epoch
     val averageEpochTime = epochTimes.sum / epochTimes.length
     log.info(s"Average epoch time: $averageEpochTime ms")
-
-    // Save training statistics to HDFS
-//    val fs = FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
-////    val statsPath = new Path("hdfs:///user/akhil/training_stats.txt")
-//      val statsPathObj = new Path(statsPath)
-//    val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPathObj, true)))
 
     val fs = if (isLocal) {
       sc.hadoopConfiguration.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)

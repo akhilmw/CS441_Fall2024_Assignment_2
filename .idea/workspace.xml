@@ -5,11 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ac43c186-e233-4477-b0d3-1649eff136f2" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/test/scala/SlidingWindowSparkTest.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.conf" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/Main.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/Main.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/scala/SlidingWindowSparkSpec.scala" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -189,7 +189,7 @@
       <workItem from="1730499533439" duration="18989000" />
       <workItem from="1730586690860" duration="16589000" />
       <workItem from="1730621100232" duration="692000" />
-      <workItem from="1730651590019" duration="31789000" />
+      <workItem from="1730651590019" duration="34379000" />
     </task>
     <servers />
   </component>

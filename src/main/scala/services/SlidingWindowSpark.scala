@@ -11,11 +11,18 @@ import java.nio.file.{Files, Paths}
 import java.net.URI
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.Encoders
+import org.slf4j.{Logger, LoggerFactory}
+
+// At the start of the object
+// Main object for processing token sequences using sliding window approach and preparing training data
 
 object SlidingWindowSpark {
+  // Load application configuration
 
   private val config = ConfigFactory.load()
+  private val logger = LoggerFactory.getLogger(getClass)
 
+  // Loads embeddings from CSV file and returns a map of token IDs to embeddings
   def loadEmbeddings(spark: SparkSession, embeddingsPath: String): Map[Int, INDArray] = {
     try {
       val embeddingsSchema = StructType(Seq(
@@ -43,7 +50,7 @@ object SlidingWindowSpark {
               (tokenId, Nd4j.create(embeddingsArray))
             } catch {
               case e: Exception =>
-                println(s"Error processing embedding row: ${e.getMessage}")
+                logger.info(s"Error processing embedding row: ${e.getMessage}")
                 null
             }
           }.filter(_ != null)
@@ -54,10 +61,12 @@ object SlidingWindowSpark {
       embeddingsMap
     } catch {
       case e: Exception =>
-        println(s"Error loading embeddings: ${e.getMessage}")
+        logger.info(s"Error loading embeddings: ${e.getMessage}")
         Map.empty[Int, INDArray]
     }
   }
+
+  // Loads and parses token sequences from CSV file
 
   def loadTokens(spark: SparkSession, tokensPath: String): Array[Int] = {
     try {
@@ -80,7 +89,7 @@ object SlidingWindowSpark {
               .map(_.trim.toInt)
           } catch {
             case e: Exception =>
-              println(s"Error parsing tokens string: ${e.getMessage}")
+              logger.info(s"Error parsing tokens string: ${e.getMessage}")
               Array.empty[Int]
           }
         }
@@ -89,11 +98,12 @@ object SlidingWindowSpark {
       tokenIds
     } catch {
       case e: Exception =>
-        println(s"Error loading tokens: ${e.getMessage}")
+        logger.info(s"Error loading tokens: ${e.getMessage}")
         Array.empty[Int]
     }
   }
 
+  // Creates embeddings for input tokens with positional encoding
   def createInputEmbeddings(
                              inputTokenIds: Array[Int],
                              embeddingsMap: Map[Int, INDArray],
@@ -124,12 +134,14 @@ object SlidingWindowSpark {
       inputEmbeddings
     } catch {
       case e: Exception =>
-        println(s"Error in createInputEmbeddings: ${e.getMessage}")
+        logger.info(s"Error in createInputEmbeddings: ${e.getMessage}")
         e.printStackTrace()
         Nd4j.create(1, embeddingDim)
     }
   }
 
+
+  // Retrieves embedding for a specific token, returns zeros if not found
   def getTokenEmbedding(tokenId: Int, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): INDArray = {
     try {
       embeddingsMap.get(tokenId) match {
@@ -138,11 +150,12 @@ object SlidingWindowSpark {
       }
     } catch {
       case e: Exception =>
-        println(s"Error getting embedding for token $tokenId: ${e.getMessage}")
+        logger.error(s"Error getting embedding for token $tokenId: ${e.getMessage}")
         Nd4j.zeros(embeddingDim)
     }
   }
 
+  // Computes positional encoding using sine/cosine functions
   def computePositionalEmbedding(position: Int, dModel: Int): INDArray = {
     try {
       val embedding = Nd4j.create(dModel)
@@ -154,11 +167,12 @@ object SlidingWindowSpark {
       embedding
     } catch {
       case e: Exception =>
-        println(s"Error computing positional embedding for position $position: ${e.getMessage}")
+        logger.error(s"Error computing positional embedding for position $position: ${e.getMessage}")
         Nd4j.zeros(dModel)
     }
   }
 
+  // Creates training data pair from input tokens and target token
   def createTrainingData(row: org.apache.spark.sql.Row, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): (Array[Byte], Array[Byte]) = {
     try {
       val inputTokenIds = row.getAs[Seq[Int]]("inputTokens").toArray
@@ -174,15 +188,21 @@ object SlidingWindowSpark {
       }
     } catch {
       case e: Exception =>
-        println(s"Error creating training data: ${e.getMessage}")
+        logger.error(s"Error creating training data: ${e.getMessage}")
         (new Array[Byte](0), new Array[Byte](0))
     }
   }
 
+  // Main entry point: processes tokens using sliding window and creates training data
+
   def main(args: Array[String]): Unit = {
+
+    // Load configuration paths
     val embeddingsFilePath = config.getString("filePaths.embeddingsPath")
     val tokensFilePath = config.getString("filePaths.tokensPath")
     val outputPath = config.getString("filePaths.slidingWindowOutputPath")
+    val embeddingDim = config.getInt("model.embeddingDim")
+    val windowSize = config.getInt("model.windowSize")
 
     val isLocal = if (args.length == 1) args(0).toBoolean else false
 
@@ -194,6 +214,7 @@ object SlidingWindowSpark {
     val embeddingsPath = if (isLocal) embeddingsFilePath else args(0)
     val tokensPath = if (isLocal) tokensFilePath else args(1)
 
+    // Initialize Spark session based on environment
     val spark = if (isLocal) {
       SparkSession.builder()
         .appName("SlidingWindowSpark")
@@ -215,25 +236,23 @@ object SlidingWindowSpark {
     import spark.implicits._
 
     try {
-      println("Loading embeddings...")
+      logger.info("Loading embeddings...")
       val embeddingsMap = loadEmbeddings(spark, embeddingsPath)
       if (embeddingsMap.isEmpty) {
         throw new Exception("Failed to load embeddings")
       }
       val embeddingsMapBroadcast = sc.broadcast(embeddingsMap)
-      println(s"Loaded ${embeddingsMap.size} embeddings")
+      logger.info(s"Loaded ${embeddingsMap.size} embeddings")
 
-      println("Loading tokens...")
+      logger.info("Loading tokens...")
       val tokenIds = loadTokens(spark, tokensPath)
       if (tokenIds.isEmpty) {
         throw new Exception("Failed to load tokens")
       }
-      println(s"Loaded ${tokenIds.length} tokens")
+      logger.info(s"Loaded ${tokenIds.length} tokens")
 
-      val windowSize = 4
-      val embeddingDim = 50
-
-      println("Creating sliding windows...")
+      // Create sliding windows from tokens
+      logger.info("Creating sliding windows...")
       val tokensDF = tokenIds.toSeq.toDF("tokenId")
         .withColumn("index", monotonically_increasing_id())
         .cache()
@@ -246,6 +265,7 @@ object SlidingWindowSpark {
         .filter(size(col("inputTokens")) === windowSize)
         .cache()
 
+      // Create training data pairs
       val trainingDataRDD = slidingDF.rdd.mapPartitions { partition =>
         partition.map { row =>
           createTrainingData(row, embeddingsMapBroadcast.value, embeddingDim)
@@ -255,6 +275,7 @@ object SlidingWindowSpark {
       }.cache()
 
       // Create output directories if running locally
+      // Set up output paths based on environment
       val outputBasePath = if (isLocal) {
         val baseDir = Paths.get(outputPath)
         val objectDir = baseDir.resolve("object")
@@ -294,24 +315,24 @@ object SlidingWindowSpark {
       // Clean up existing paths
       Seq(objectFilePath, csvPath).foreach { path =>
         if (fs.exists(path)) {
-          println(s"Deleting existing path: $path")
+          logger.debug(s"Deleting existing path: $path")
           fs.delete(path, true)
         }
       }
 
       // Save outputs
-      println("Saving training data...")
-      println(s"Saving to object file path: ${objectFilePath.toString}")
-      println(s"Saving to CSV path: ${csvPath.toString}")
+      logger.info("Saving training data...")
+      logger.info(s"Saving to object file path: ${objectFilePath.toString}")
+      logger.info(s"Saving to CSV path: ${csvPath.toString}")
 
       trainingDataRDD.coalesce(4).saveAsObjectFile(objectFilePath.toString)
       trainingDataRDD.coalesce(1).saveAsTextFile(csvPath.toString)
 
-      println(s"Training data saved successfully to: $outputBasePath")
+      logger.info(s"Training data saved successfully to: $outputBasePath")
 
     } catch {
       case e: Exception =>
-        println(s"Error during processing: ${e.getMessage}")
+        logger.error(s"Error during processing: ${e.getMessage}")
         e.printStackTrace()
         throw e
     } finally {
