@@ -219,15 +219,29 @@ object TrainingService {
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   def main(args: Array[String]): Unit = {
+
+    // for emr :
+    if (args.length < 3) {
+      System.err.println("Usage: TrainingService <trainingDataPath> <statsPath> <modelPath>")
+      System.exit(1)
+    }
+
+    val trainingDataPath = args(0)
+    val statsPath = args(1)
+    val modelPath = args(2)
+
+
+
     // Set up Spark session and context
     val spark = SparkSession.builder()
       .appName("TrainingService")
-      .master("spark://Akhils-MacBook-Air.local:7077") // Spark master URL
+//      .master("spark://Akhils-MacBook-Air.local:7077") // Spark master URL
       .config("spark.executor.memory", "4g")
       .config("spark.driver.memory", "2g")
       .config("spark.eventLog.enabled", "true")
-      .config("spark.eventLog.dir", "hdfs://localhost:9000/tmp/spark-events") // HDFS for event logs
-      .config("spark.hadoop.fs.defaultFS", "hdfs://localhost:9000") // Use HDFS as default FS
+//      .config("spark.eventLog.dir", "hdfs://localhost:9000/tmp/spark-events") // HDFS for event logs
+      .config("spark.eventLog.dir", "hdfs:///user/akhil/spark-events") // HDFS relative path
+//      .config("spark.hadoop.fs.defaultFS", "hdfs://localhost:9000") // Use HDFS as default FS
       .getOrCreate()
 
     val sc = spark.sparkContext
@@ -240,7 +254,8 @@ object TrainingService {
     val startTime = LocalDateTime.now()
 
     // Load the serialized RDD from HDFS
-    val serializableRDD: RDD[(Array[Byte], Array[Byte])] = sc.objectFile("hdfs:///user/akhil/trainingData/part-00000")
+//    val serializableRDD: RDD[(Array[Byte], Array[Byte])] = sc.objectFile("hdfs:///user/akhil/trainingData/part-00000")
+    val serializableRDD: RDD[(Array[Byte], Array[Byte])] = sc.objectFile(trainingDataPath)
 
     // Cache the RDD to optimize performance
     serializableRDD.persist(StorageLevel.MEMORY_ONLY)
@@ -286,7 +301,7 @@ object TrainingService {
       .batchSizePerWorker(batchSize)
       .workerPrefetchNumBatches(2)
       .collectTrainingStats(true)
-      .exportDirectory("hdfs://localhost:9000/input/spark")
+      .exportDirectory("/user/akhil/input/spark")
       .build()
 
     // Define the neural network configuration using LSTM
@@ -410,8 +425,9 @@ object TrainingService {
 
     // Save training statistics to HDFS
     val fs = FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
-    val statsPath = new Path("hdfs:///user/akhil/training_stats.txt")
-    val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPath, true)))
+//    val statsPath = new Path("hdfs:///user/akhil/training_stats.txt")
+      val statsPathObj = new Path(statsPath)
+    val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPathObj, true)))
 
     // Write summary information
     val summary = f"""
@@ -437,8 +453,8 @@ object TrainingService {
     log.info(s"Training statistics saved to hdfs:///user/akhil/training_stats.txt")
 
     // Save the trained model to HDFS
-    val modelPath = new Path("hdfs:///user/akhil/trainedModel.zip")
-    val outputStream: OutputStream = fs.create(modelPath)
+    val modelPathObj = new Path(modelPath)
+    val outputStream: OutputStream = fs.create(modelPathObj)
     ModelSerializer.writeModel(network, outputStream, true)
     outputStream.close()
     log.info(s"Model saved at: $modelPath")
