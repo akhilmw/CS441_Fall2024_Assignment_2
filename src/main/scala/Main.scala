@@ -1,5 +1,13 @@
+import services.TrainingService
+import services.SlidingWindowSpark
 object Main {
   def main(args: Array[String]): Unit = {
-    println("Hello world!")
+
+    SlidingWindowSpark.main(Array("true"))
+    TrainingService.main(Array("true"))
+
   }
 }
+
+
+

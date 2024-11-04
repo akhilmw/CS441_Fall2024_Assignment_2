@@ -10,13 +10,176 @@ import org.apache.spark.sql.types._
 import java.nio.file.{Files, Paths}
 import java.net.URI
 import com.typesafe.config.ConfigFactory
+import org.apache.spark.sql.Encoders
 
 object SlidingWindowSpark {
 
   private val config = ConfigFactory.load()
 
-  def main(args: Array[String]): Unit = {
+  def loadEmbeddings(spark: SparkSession, embeddingsPath: String): Map[Int, INDArray] = {
+    try {
+      val embeddingsSchema = StructType(Seq(
+        StructField("tokenId", IntegerType, false)
+      ) ++ (1 to 50).map(i => StructField(s"embedding$i", DoubleType, true)))
 
+      val embeddingsDF = spark.read
+        .option("header", "true")
+        .schema(embeddingsSchema)
+        .csv(embeddingsPath)
+        .cache()
+
+      val embeddingColumns = embeddingsDF.columns.filter(_.startsWith("embedding"))
+
+      val embeddingsMap = embeddingsDF
+        .select("tokenId", embeddingColumns: _*)
+        .rdd
+        .mapPartitions { partition =>
+          partition.map { row =>
+            try {
+              val tokenId = row.getAs[Int]("tokenId")
+              val embeddingsArray = embeddingColumns.map(col =>
+                Option(row.getAs[Double](col)).map(_.toFloat).getOrElse(0.0f)
+              ).toArray
+              (tokenId, Nd4j.create(embeddingsArray))
+            } catch {
+              case e: Exception =>
+                println(s"Error processing embedding row: ${e.getMessage}")
+                null
+            }
+          }.filter(_ != null)
+        }
+        .collectAsMap()
+        .toMap
+
+      embeddingsMap
+    } catch {
+      case e: Exception =>
+        println(s"Error loading embeddings: ${e.getMessage}")
+        Map.empty[Int, INDArray]
+    }
+  }
+
+  def loadTokens(spark: SparkSession, tokensPath: String): Array[Int] = {
+    try {
+      val tokensSchema = StructType(Seq(
+        StructField("tokens", StringType, false)
+      ))
+
+      val tokenIds = spark.read
+        .option("header", "true")
+        .schema(tokensSchema)
+        .csv(tokensPath)
+        .select("tokens")
+        .rdd
+        .flatMap { row =>
+          try {
+            row.getString(0).trim
+              .stripPrefix("[").stripSuffix("]")
+              .split("[,\\s]+")
+              .filter(_.nonEmpty)
+              .map(_.trim.toInt)
+          } catch {
+            case e: Exception =>
+              println(s"Error parsing tokens string: ${e.getMessage}")
+              Array.empty[Int]
+          }
+        }
+        .collect()
+
+      tokenIds
+    } catch {
+      case e: Exception =>
+        println(s"Error loading tokens: ${e.getMessage}")
+        Array.empty[Int]
+    }
+  }
+
+  def createInputEmbeddings(
+                             inputTokenIds: Array[Int],
+                             embeddingsMap: Map[Int, INDArray],
+                             embeddingDim: Int
+                           ): INDArray = {
+    try {
+      val sequenceLength = inputTokenIds.length
+      val inputEmbeddings = Nd4j.create(sequenceLength, embeddingDim)
+
+      for (i <- inputTokenIds.indices) {
+        val tokenEmbedding = getTokenEmbedding(inputTokenIds(i), embeddingsMap, embeddingDim)
+        if (tokenEmbedding != null) {
+          val positionalEmbedding = computePositionalEmbedding(i, embeddingDim)
+          if (positionalEmbedding != null) {
+            val tokenEmbeddingCopy = tokenEmbedding.dup()
+            val positionalEmbeddingCopy = positionalEmbedding.dup()
+
+            if (tokenEmbeddingCopy.length() == positionalEmbeddingCopy.length()) {
+              val combinedEmbedding = tokenEmbeddingCopy.add(positionalEmbeddingCopy)
+              if (combinedEmbedding != null) {
+                inputEmbeddings.putRow(i, combinedEmbedding)
+              }
+            }
+          }
+        }
+      }
+
+      inputEmbeddings
+    } catch {
+      case e: Exception =>
+        println(s"Error in createInputEmbeddings: ${e.getMessage}")
+        e.printStackTrace()
+        Nd4j.create(1, embeddingDim)
+    }
+  }
+
+  def getTokenEmbedding(tokenId: Int, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): INDArray = {
+    try {
+      embeddingsMap.get(tokenId) match {
+        case Some(embedding) if embedding != null => embedding.dup()
+        case _ => Nd4j.zeros(embeddingDim)
+      }
+    } catch {
+      case e: Exception =>
+        println(s"Error getting embedding for token $tokenId: ${e.getMessage}")
+        Nd4j.zeros(embeddingDim)
+    }
+  }
+
+  def computePositionalEmbedding(position: Int, dModel: Int): INDArray = {
+    try {
+      val embedding = Nd4j.create(dModel)
+      for (i <- 0 until dModel) {
+        val angle = position.toDouble / math.pow(10000, (2 * (i / 2)) / dModel.toDouble)
+        val value = if (i % 2 == 0) math.sin(angle) else math.cos(angle)
+        embedding.putScalar(i, value.toFloat)
+      }
+      embedding
+    } catch {
+      case e: Exception =>
+        println(s"Error computing positional embedding for position $position: ${e.getMessage}")
+        Nd4j.zeros(dModel)
+    }
+  }
+
+  def createTrainingData(row: org.apache.spark.sql.Row, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): (Array[Byte], Array[Byte]) = {
+    try {
+      val inputTokenIds = row.getAs[Seq[Int]]("inputTokens").toArray
+      val targetTokenId = row.getAs[Int]("targetTokenId")
+
+      val inputEmbeddings = createInputEmbeddings(inputTokenIds, embeddingsMap, embeddingDim)
+      val targetEmbedding = getTokenEmbedding(targetTokenId, embeddingsMap, embeddingDim)
+
+      if (inputEmbeddings != null && targetEmbedding != null) {
+        (Nd4j.toByteArray(inputEmbeddings), Nd4j.toByteArray(targetEmbedding))
+      } else {
+        throw new Exception("Null embeddings encountered")
+      }
+    } catch {
+      case e: Exception =>
+        println(s"Error creating training data: ${e.getMessage}")
+        (new Array[Byte](0), new Array[Byte](0))
+    }
+  }
+
+  def main(args: Array[String]): Unit = {
     val embeddingsFilePath = config.getString("filePaths.embeddingsPath")
     val tokensFilePath = config.getString("filePaths.tokensPath")
     val outputPath = config.getString("filePaths.slidingWindowOutputPath")
@@ -50,169 +213,6 @@ object SlidingWindowSpark {
 
     val sc = spark.sparkContext
     import spark.implicits._
-
-    def loadEmbeddings(spark: SparkSession, embeddingsPath: String): Map[Int, INDArray] = {
-      try {
-        val embeddingsSchema = StructType(Seq(
-          StructField("tokenId", IntegerType, false)
-        ) ++ (1 to 50).map(i => StructField(s"embedding$i", DoubleType, true)))
-
-        val embeddingsDF = spark.read
-          .option("header", "true")
-          .schema(embeddingsSchema)
-          .csv(embeddingsPath)
-          .cache()
-
-        val embeddingColumns = embeddingsDF.columns.filter(_.startsWith("embedding"))
-
-        val embeddingsMap = embeddingsDF
-          .select("tokenId", embeddingColumns: _*)
-          .rdd
-          .mapPartitions { partition =>
-            partition.map { row =>
-              try {
-                val tokenId = row.getAs[Int]("tokenId")
-                val embeddingsArray = embeddingColumns.map(col =>
-                  Option(row.getAs[Double](col)).map(_.toFloat).getOrElse(0.0f)
-                ).toArray
-                (tokenId, Nd4j.create(embeddingsArray))
-              } catch {
-                case e: Exception =>
-                  println(s"Error processing embedding row: ${e.getMessage}")
-                  null
-              }
-            }.filter(_ != null)
-          }
-          .collectAsMap()
-          .toMap
-
-        embeddingsMap
-      } catch {
-        case e: Exception =>
-          println(s"Error loading embeddings: ${e.getMessage}")
-          Map.empty[Int, INDArray]
-      }
-    }
-
-    def loadTokens(spark: SparkSession, tokensPath: String): Array[Int] = {
-      try {
-        val tokensSchema = StructType(Seq(
-          StructField("tokens", StringType, false)
-        ))
-
-        val tokenIds = spark.read
-          .option("header", "true")
-          .schema(tokensSchema)
-          .csv(tokensPath)
-          .select("tokens")
-          .as[String]
-          .flatMap { encodedTokensStr =>
-            try {
-              encodedTokensStr.trim
-                .stripPrefix("[").stripSuffix("]")
-                .split("[,\\s]+")
-                .filter(_.nonEmpty)
-                .map(_.trim.toInt)
-            } catch {
-              case e: Exception =>
-                println(s"Error parsing tokens string: ${e.getMessage}")
-                Array.empty[Int]
-            }
-          }
-          .collect()
-
-        tokenIds
-      } catch {
-        case e: Exception =>
-          println(s"Error loading tokens: ${e.getMessage}")
-          Array.empty[Int]
-      }
-    }
-
-    def createInputEmbeddings(
-                               inputTokenIds: Array[Int],
-                               embeddingsMap: Map[Int, INDArray],
-                               embeddingDim: Int
-                             ): INDArray = {
-      try {
-        val sequenceLength = inputTokenIds.length
-        val inputEmbeddings = Nd4j.create(sequenceLength, embeddingDim)
-
-        for (i <- inputTokenIds.indices) {
-          val tokenEmbedding = getTokenEmbedding(inputTokenIds(i), embeddingsMap, embeddingDim)
-          if (tokenEmbedding != null) {
-            val positionalEmbedding = computePositionalEmbedding(i, embeddingDim)
-            if (positionalEmbedding != null) {
-              val tokenEmbeddingCopy = tokenEmbedding.dup()
-              val positionalEmbeddingCopy = positionalEmbedding.dup()
-
-              if (tokenEmbeddingCopy.length() == positionalEmbeddingCopy.length()) {
-                val combinedEmbedding = tokenEmbeddingCopy.add(positionalEmbeddingCopy)
-                if (combinedEmbedding != null) {
-                  inputEmbeddings.putRow(i, combinedEmbedding)
-                }
-              }
-            }
-          }
-        }
-
-        inputEmbeddings
-      } catch {
-        case e: Exception =>
-          println(s"Error in createInputEmbeddings: ${e.getMessage}")
-          e.printStackTrace()
-          Nd4j.create(1, embeddingDim)
-      }
-    }
-
-    def getTokenEmbedding(tokenId: Int, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): INDArray = {
-      try {
-        embeddingsMap.get(tokenId) match {
-          case Some(embedding) if embedding != null => embedding.dup()
-          case _ => Nd4j.zeros(embeddingDim)
-        }
-      } catch {
-        case e: Exception =>
-          println(s"Error getting embedding for token $tokenId: ${e.getMessage}")
-          Nd4j.zeros(embeddingDim)
-      }
-    }
-
-    def computePositionalEmbedding(position: Int, dModel: Int): INDArray = {
-      try {
-        val embedding = Nd4j.create(dModel)
-        for (i <- 0 until dModel) {
-          val angle = position.toDouble / math.pow(10000, (2 * (i / 2)) / dModel.toDouble)
-          val value = if (i % 2 == 0) math.sin(angle) else math.cos(angle)
-          embedding.putScalar(i, value.toFloat)
-        }
-        embedding
-      } catch {
-        case e: Exception =>
-          println(s"Error computing positional embedding for position $position: ${e.getMessage}")
-          Nd4j.zeros(dModel)
-      }
-    }
-
-    def createTrainingData(row: org.apache.spark.sql.Row, embeddingsMap: Map[Int, INDArray], embeddingDim: Int): (Array[Byte], Array[Byte]) = {
-      try {
-        val inputTokenIds = row.getAs[Seq[Int]]("inputTokens").toArray
-        val targetTokenId = row.getAs[Int]("targetTokenId")
-
-        val inputEmbeddings = createInputEmbeddings(inputTokenIds, embeddingsMap, embeddingDim)
-        val targetEmbedding = getTokenEmbedding(targetTokenId, embeddingsMap, embeddingDim)
-
-        if (inputEmbeddings != null && targetEmbedding != null) {
-          (Nd4j.toByteArray(inputEmbeddings), Nd4j.toByteArray(targetEmbedding))
-        } else {
-          throw new Exception("Null embeddings encountered")
-        }
-      } catch {
-        case e: Exception =>
-          println(s"Error creating training data: ${e.getMessage}")
-          (new Array[Byte](0), new Array[Byte](0))
-      }
-    }
 
     try {
       println("Loading embeddings...")

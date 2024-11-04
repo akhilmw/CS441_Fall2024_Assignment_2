@@ -5,20 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ac43c186-e233-4477-b0d3-1649eff136f2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/test/scala/SlidingWindowSparkTest.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.conf" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainedModel.zip" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/._SUCCESS.crc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/.part-00000.crc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/_SUCCESS" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/part-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/._SUCCESS.crc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/.part-00000.crc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/_SUCCESS" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/part-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/Main.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/Main.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/utils/SlidingWindowWithEmbeddings.scala" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/scala/SlidingWindowSparkSpec.scala" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,75 +55,111 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
-    &quot;Application.SlidingWindowSpark.executor&quot;: &quot;Run&quot;,
-    &quot;Application.SlidingWindowWithEmbeddings.executor&quot;: &quot;Run&quot;,
-    &quot;Application.TrainingService.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.Main.executor": "Run",
+    "Application.SlidingWindowSpark.executor": "Run",
+    "Application.SlidingWindowWithEmbeddings.executor": "Run",
+    "Application.TrainingService.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ScalaTest.SlidingWindowSparkTest.computePositionalEmbedding should generate correct positional embeddings.executor": "Run",
+    "ScalaTest.SlidingWindowSparkTest.createInputEmbeddings should correctly combine token and positional embeddings.executor": "Run",
+    "ScalaTest.SlidingWindowSparkTest.getTokenEmbedding should return correct embedding for known token.executor": "Run",
+    "ScalaTest.SlidingWindowSparkTest.loadTokens should correctly load and parse tokens from CSV.executor": "Run",
+    "ScalaTest.TrainingServiceSpec.executor": "Run",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
-  <component name="RunManager" selected="Application.TrainingService">
-    <configuration name="SlidingWindowSpark" type="Application" factoryName="Application" temporary="true">
-      <option name="MAIN_CLASS_NAME" value="SlidingWindowSpark" />
+}]]></component>
+  <component name="RunManager" selected="Application.Main">
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
       <module name="CS441_Fall2024_Assignment_2" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="SlidingWindowWithEmbeddings" type="Application" factoryName="Application" temporary="true">
-      <option name="MAIN_CLASS_NAME" value="utils.SlidingWindowWithEmbeddings" />
+    <configuration name="SlidingWindowSparkTest.computePositionalEmbedding should generate correct positional embeddings" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true" nameIsGenerated="true" show_console_on_std_err="false" show_console_on_std_out="false">
       <module name="CS441_Fall2024_Assignment_2" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="utils.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
+      <option name="allowRunningInParallel" value="false" />
+      <option name="projectPathOnTarget" />
+      <option name="selectedOptions">
+        <list />
+      </option>
+      <option name="testKind" value="Test name" />
+      <option name="testClassPath" value="SlidingWindowSparkTest" />
+      <option name="testName" value="computePositionalEmbedding should generate correct positional embeddings" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="TrainingService" type="Application" factoryName="Application" temporary="true">
-      <option name="ALTERNATIVE_JRE_PATH" value="/opt/homebrew/Cellar/openjdk@11/11.0.25/libexec/openjdk.jdk/Contents/Home" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-      <option name="MAIN_CLASS_NAME" value="services.TrainingService" />
+    <configuration name="SlidingWindowSparkTest.getTokenEmbedding should return correct embedding for known token" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true" nameIsGenerated="true" show_console_on_std_err="false" show_console_on_std_out="false">
       <module name="CS441_Fall2024_Assignment_2" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="services.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
+      <option name="allowRunningInParallel" value="false" />
+      <option name="projectPathOnTarget" />
+      <option name="selectedOptions">
+        <list />
+      </option>
+      <option name="testKind" value="Test name" />
+      <option name="testClassPath" value="SlidingWindowSparkTest" />
+      <option name="testName" value="getTokenEmbedding should return correct embedding for known token" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="SlidingWindowSparkTest.loadTokens should correctly load and parse tokens from CSV" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true" nameIsGenerated="true" show_console_on_std_err="false" show_console_on_std_out="false">
+      <module name="CS441_Fall2024_Assignment_2" />
+      <option name="allowRunningInParallel" value="false" />
+      <option name="projectPathOnTarget" />
+      <option name="selectedOptions">
+        <list />
+      </option>
+      <option name="testKind" value="Test name" />
+      <option name="testClassPath" value="SlidingWindowSparkTest" />
+      <option name="testName" value="loadTokens should correctly load and parse tokens from CSV" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TrainingServiceSpec" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true" nameIsGenerated="true" show_console_on_std_err="false" show_console_on_std_out="false">
+      <module name="CS441_Fall2024_Assignment_2" />
+      <option name="allowRunningInParallel" value="false" />
+      <option name="projectPathOnTarget" />
+      <option name="selectedOptions">
+        <list />
+      </option>
+      <option name="testKind" value="Class" />
+      <option name="testClassPath" value="services.TrainingServiceSpec" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
     <list>
-      <item itemvalue="Application.SlidingWindowSpark" />
-      <item itemvalue="Application.SlidingWindowWithEmbeddings" />
-      <item itemvalue="Application.TrainingService" />
+      <item itemvalue="Application.Main" />
+      <item itemvalue="ScalaTest.SlidingWindowSparkTest.computePositionalEmbedding should generate correct positional embeddings" />
+      <item itemvalue="ScalaTest.SlidingWindowSparkTest.getTokenEmbedding should return correct embedding for known token" />
+      <item itemvalue="ScalaTest.SlidingWindowSparkTest.loadTokens should correctly load and parse tokens from CSV" />
+      <item itemvalue="ScalaTest.TrainingServiceSpec" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.TrainingService" />
-        <item itemvalue="Application.SlidingWindowWithEmbeddings" />
-        <item itemvalue="Application.SlidingWindowSpark" />
+        <item itemvalue="Application.Main" />
+        <item itemvalue="ScalaTest.TrainingServiceSpec" />
+        <item itemvalue="ScalaTest.SlidingWindowSparkTest.loadTokens should correctly load and parse tokens from CSV" />
+        <item itemvalue="ScalaTest.SlidingWindowSparkTest.computePositionalEmbedding should generate correct positional embeddings" />
+        <item itemvalue="ScalaTest.SlidingWindowSparkTest.getTokenEmbedding should return correct embedding for known token" />
       </list>
     </recent_temporary>
   </component>
@@ -162,7 +189,7 @@
       <workItem from="1730499533439" duration="18989000" />
       <workItem from="1730586690860" duration="16589000" />
       <workItem from="1730621100232" duration="692000" />
-      <workItem from="1730651590019" duration="27788000" />
+      <workItem from="1730651590019" duration="31789000" />
     </task>
     <servers />
   </component>
