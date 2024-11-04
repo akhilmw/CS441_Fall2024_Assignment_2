@@ -1,35 +1,54 @@
 package services
 
-import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.apache.spark.sql.types._
+
+import java.nio.file.{Files, Paths}
 import java.net.URI
+import com.typesafe.config.ConfigFactory
 
 object SlidingWindowSpark {
 
+  private val config = ConfigFactory.load()
+
   def main(args: Array[String]): Unit = {
-    if (args.length < 3) {
+
+    val embeddingsFilePath = config.getString("filePaths.embeddingsPath")
+    val tokensFilePath = config.getString("filePaths.tokensPath")
+    val outputPath = config.getString("filePaths.slidingWindowOutputPath")
+
+    val isLocal = if (args.length == 1) args(0).toBoolean else false
+
+    if (!isLocal && args.length < 3) {
       System.err.println("Usage: SlidingWindowSpark <embeddingsPath> <tokensPath> <outputPath>")
       System.exit(1)
     }
 
-    val embeddingsPath = args(0)
-    val tokensPath = args(1)
-    val outputBasePath = args(2)
+    val embeddingsPath = if (isLocal) embeddingsFilePath else args(0)
+    val tokensPath = if (isLocal) tokensFilePath else args(1)
 
-    val spark = SparkSession.builder()
-      .appName("SlidingWindowSpark")
-      .config("spark.executor.memory", "4g")
-      .config("spark.driver.memory", "2g")
-      .config("spark.eventLog.enabled", "true")
-      .config("spark.eventLog.dir", "hdfs:///user/akhil/spark-events")
-      .getOrCreate()
+    val spark = if (isLocal) {
+      SparkSession.builder()
+        .appName("SlidingWindowSpark")
+        .master("local[*]")
+        .config("spark.executor.memory", "2g")
+        .config("spark.driver.memory", "2g")
+        .getOrCreate()
+    } else {
+      SparkSession.builder()
+        .appName("SlidingWindowSpark")
+        .config("spark.executor.memory", "4g")
+        .config("spark.driver.memory", "2g")
+        .config("spark.eventLog.enabled", "true")
+        .config("spark.eventLog.dir", "hdfs:///user/akhil/spark-events")
+        .getOrCreate()
+    }
 
     val sc = spark.sparkContext
-//    sc.setCheckpointDir("hdfs:///user/hadoop/checkpoints")
     import spark.implicits._
 
     def loadEmbeddings(spark: SparkSession, embeddingsPath: String): Map[Int, INDArray] = {
@@ -124,11 +143,9 @@ object SlidingWindowSpark {
           if (tokenEmbedding != null) {
             val positionalEmbedding = computePositionalEmbedding(i, embeddingDim)
             if (positionalEmbedding != null) {
-              // Create copies to ensure thread safety
               val tokenEmbeddingCopy = tokenEmbedding.dup()
               val positionalEmbeddingCopy = positionalEmbedding.dup()
 
-              // Validate shapes before adding
               if (tokenEmbeddingCopy.length() == positionalEmbeddingCopy.length()) {
                 val combinedEmbedding = tokenEmbeddingCopy.add(positionalEmbeddingCopy)
                 if (combinedEmbedding != null) {
@@ -198,7 +215,6 @@ object SlidingWindowSpark {
     }
 
     try {
-      // Load embeddings and broadcast
       println("Loading embeddings...")
       val embeddingsMap = loadEmbeddings(spark, embeddingsPath)
       if (embeddingsMap.isEmpty) {
@@ -207,7 +223,6 @@ object SlidingWindowSpark {
       val embeddingsMapBroadcast = sc.broadcast(embeddingsMap)
       println(s"Loaded ${embeddingsMap.size} embeddings")
 
-      // Load tokens
       println("Loading tokens...")
       val tokenIds = loadTokens(spark, tokensPath)
       if (tokenIds.isEmpty) {
@@ -215,11 +230,9 @@ object SlidingWindowSpark {
       }
       println(s"Loaded ${tokenIds.length} tokens")
 
-      // Parameters
       val windowSize = 4
       val embeddingDim = 50
 
-      // Create sliding windows
       println("Creating sliding windows...")
       val tokensDF = tokenIds.toSeq.toDF("tokenId")
         .withColumn("index", monotonically_increasing_id())
@@ -233,7 +246,6 @@ object SlidingWindowSpark {
         .filter(size(col("inputTokens")) === windowSize)
         .cache()
 
-      // Process and create training data
       val trainingDataRDD = slidingDF.rdd.mapPartitions { partition =>
         partition.map { row =>
           createTrainingData(row, embeddingsMapBroadcast.value, embeddingDim)
@@ -242,14 +254,42 @@ object SlidingWindowSpark {
         }
       }.cache()
 
-      // Checkpoint to prevent stack overflow
-//      trainingDataRDD.checkpoint()
+      // Create output directories if running locally
+      val outputBasePath = if (isLocal) {
+        val baseDir = Paths.get(outputPath)
+        val objectDir = baseDir.resolve("object")
+        val csvDir = baseDir.resolve("csv")
 
-      // Define and prepare output paths
-      val objectFilePath = new org.apache.hadoop.fs.Path(outputBasePath + "object")
-      val csvPath = new org.apache.hadoop.fs.Path(outputBasePath + "csv")
+        Files.createDirectories(baseDir)
+        Files.createDirectories(objectDir)
+        Files.createDirectories(csvDir)
 
-      val fs = org.apache.hadoop.fs.FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
+        outputPath
+      } else {
+        s"hdfs:///$outputPath/"
+      }
+
+      // Construct proper paths for local or HDFS
+      val objectFilePath = if (isLocal) {
+        new org.apache.hadoop.fs.Path(s"file://${Paths.get(outputBasePath, "object").toAbsolutePath}")
+      } else {
+        new org.apache.hadoop.fs.Path(outputBasePath + "object")
+      }
+
+      val csvPath = if (isLocal) {
+        new org.apache.hadoop.fs.Path(s"file://${Paths.get(outputBasePath, "csv").toAbsolutePath}")
+      } else {
+        new org.apache.hadoop.fs.Path(outputBasePath + "csv")
+      }
+
+      // Configure filesystem
+      val fs = if (isLocal) {
+        sc.hadoopConfiguration.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
+        sc.hadoopConfiguration.set("fs.file.impl.disable.cache", "true")
+        org.apache.hadoop.fs.FileSystem.get(new URI("file:///"), sc.hadoopConfiguration)
+      } else {
+        org.apache.hadoop.fs.FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
+      }
 
       // Clean up existing paths
       Seq(objectFilePath, csvPath).foreach { path =>
@@ -259,8 +299,11 @@ object SlidingWindowSpark {
         }
       }
 
-      // Save outputs with reduced partitions
+      // Save outputs
       println("Saving training data...")
+      println(s"Saving to object file path: ${objectFilePath.toString}")
+      println(s"Saving to CSV path: ${csvPath.toString}")
+
       trainingDataRDD.coalesce(4).saveAsObjectFile(objectFilePath.toString)
       trainingDataRDD.coalesce(1).saveAsTextFile(csvPath.toString)
 

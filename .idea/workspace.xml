@@ -5,11 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ac43c186-e233-4477-b0d3-1649eff136f2" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.bsp/sbt.json" beforeDir="false" afterPath="$PROJECT_DIR$/.bsp/sbt.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/CS441_Fall2024_Assignment_2.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.conf" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainedModel.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/._SUCCESS.crc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/.part-00000.crc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/_SUCCESS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingData/part-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/._SUCCESS.crc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/.part-00000.crc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/_SUCCESS" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/trainingDataCSV/part-00000" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/SlidingWindowSpark.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/services/TrainingService.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/utils/SlidingWindowWithEmbeddings.scala" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -153,7 +162,7 @@
       <workItem from="1730499533439" duration="18989000" />
       <workItem from="1730586690860" duration="16589000" />
       <workItem from="1730621100232" duration="692000" />
-      <workItem from="1730651590019" duration="18615000" />
+      <workItem from="1730651590019" duration="27788000" />
     </task>
     <servers />
   </component>

@@ -25,6 +25,7 @@ import org.deeplearning4j.util.ModelSerializer
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 
 import java.io.BufferedWriter
+import java.nio.file.Paths
 import scala.collection.mutable
 import java.util
 import java.time.{Duration, LocalDateTime}
@@ -40,6 +41,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import java.net.URI
 import java.io.OutputStreamWriter
 import java.io.OutputStream
+import com.typesafe.config.ConfigFactory
 
 // Custom training listener to collect detailed statistics
 @SerialVersionUID(100L)
@@ -217,32 +219,43 @@ class CustomTrainingStatsListener extends BaseTrainingListener with Serializable
 object TrainingService {
   // Initialize logger
   private val log: Logger = LoggerFactory.getLogger(getClass)
+  private val config = ConfigFactory.load()
 
   def main(args: Array[String]): Unit = {
 
-    // for emr :
-    if (args.length < 3) {
-      System.err.println("Usage: TrainingService <trainingDataPath> <statsPath> <modelPath>")
-      System.exit(1)
+    val isLocal = if (args.length == 1) args(0).toBoolean else false
+    // Get paths from config or command line args
+    val (trainingDataPath, statsPath, modelPath) = if (isLocal) {
+      (
+        config.getString("filePaths.trainingDataPath"),
+        config.getString("filePaths.statsPath"),
+        config.getString("filePaths.modelPath")
+      )
+    } else {
+      if (args.length < 3) {
+        System.err.println("Usage: TrainingService <trainingDataPath> <statsPath> <modelPath>")
+        System.exit(1)
+      }
+      (args(0), args(1), args(2))
     }
 
-    val trainingDataPath = args(0)
-    val statsPath = args(1)
-    val modelPath = args(2)
-
-
-
-    // Set up Spark session and context
-    val spark = SparkSession.builder()
-      .appName("TrainingService")
-//      .master("spark://Akhils-MacBook-Air.local:7077") // Spark master URL
-      .config("spark.executor.memory", "4g")
-      .config("spark.driver.memory", "2g")
-      .config("spark.eventLog.enabled", "true")
-//      .config("spark.eventLog.dir", "hdfs://localhost:9000/tmp/spark-events") // HDFS for event logs
-      .config("spark.eventLog.dir", "hdfs:///user/akhil/spark-events") // HDFS relative path
-//      .config("spark.hadoop.fs.defaultFS", "hdfs://localhost:9000") // Use HDFS as default FS
-      .getOrCreate()
+    // Set up Spark session based on environment
+    val spark = if (isLocal) {
+      SparkSession.builder()
+        .appName("TrainingService")
+        .master("local[*]")
+        .config("spark.executor.memory", "2g")
+        .config("spark.driver.memory", "2g")
+        .getOrCreate()
+    } else {
+      SparkSession.builder()
+        .appName("TrainingService")
+        .config("spark.executor.memory", "4g")
+        .config("spark.driver.memory", "2g")
+        .config("spark.eventLog.enabled", "true")
+        .config("spark.eventLog.dir", "hdfs:///user/akhil/spark-events")
+        .getOrCreate()
+    }
 
     val sc = spark.sparkContext
 
@@ -301,7 +314,7 @@ object TrainingService {
       .batchSizePerWorker(batchSize)
       .workerPrefetchNumBatches(2)
       .collectTrainingStats(true)
-      .exportDirectory("/user/akhil/input/spark")
+//      .exportDirectory("/user/akhil/input/spark")
       .build()
 
     // Define the neural network configuration using LSTM
@@ -424,40 +437,79 @@ object TrainingService {
     log.info(s"Average epoch time: $averageEpochTime ms")
 
     // Save training statistics to HDFS
-    val fs = FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
-//    val statsPath = new Path("hdfs:///user/akhil/training_stats.txt")
-      val statsPathObj = new Path(statsPath)
-    val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPathObj, true)))
+//    val fs = FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
+////    val statsPath = new Path("hdfs:///user/akhil/training_stats.txt")
+//      val statsPathObj = new Path(statsPath)
+//    val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPathObj, true)))
 
-    // Write summary information
-    val summary = f"""
-                     |=== Training Summary ===
-                     |Start Time: ${startTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}
-                     |End Time: ${LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}
-                     |Total Duration: ${Duration.between(startTime, LocalDateTime.now).toMinutes} minutes
-                     |Number of Epochs: $numEpochs
-                     |Batch Size: $batchSize
-                     |Hidden Layer Size: $hiddenLayerSize
-                     |Average Epoch Time: ${averageEpochTime}ms
-                     |============================
-                     |
-                     |Detailed Statistics:
-                     |""".stripMargin
+    val fs = if (isLocal) {
+      sc.hadoopConfiguration.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
+      sc.hadoopConfiguration.set("fs.file.impl.disable.cache", "true")
+      FileSystem.get(new URI("file:///"), sc.hadoopConfiguration)
+    } else {
+      FileSystem.get(new URI("hdfs:///"), sc.hadoopConfiguration)
+    }
 
-    writer.write(summary)
-    writer.write(trainingStats.toString())
-    writer.write("\nDetailed Training Metrics:\n")
-    writer.write(statsListener.getStats)
-    writer.close()
+    // Construct proper paths for stats file
+    val statsPathObj = if (isLocal) {
+      val absolutePath = Paths.get(statsPath).toAbsolutePath
+      new Path(s"file://$absolutePath")
+    } else {
+      new Path(s"hdfs:///$statsPath")
+    }
 
-    log.info(s"Training statistics saved to hdfs:///user/akhil/training_stats.txt")
+    try {
+      val writer = new BufferedWriter(new OutputStreamWriter(fs.create(statsPathObj, true)))
+      try {
+        val summary = f"""
+                         |=== Training Summary ===
+                         |Start Time: ${startTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}
+                         |End Time: ${LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}
+                         |Total Duration: ${Duration.between(startTime, LocalDateTime.now).toMinutes} minutes
+                         |Number of Epochs: $numEpochs
+                         |Batch Size: $batchSize
+                         |Hidden Layer Size: $hiddenLayerSize
+                         |Average Epoch Time: ${averageEpochTime}ms
+                         |============================
+                         |
+                         |Detailed Statistics:
+                         |""".stripMargin
 
-    // Save the trained model to HDFS
-    val modelPathObj = new Path(modelPath)
-    val outputStream: OutputStream = fs.create(modelPathObj)
-    ModelSerializer.writeModel(network, outputStream, true)
-    outputStream.close()
-    log.info(s"Model saved at: $modelPath")
+        writer.write(summary)
+        writer.write(trainingStats.toString())
+        writer.write("\nDetailed Training Metrics:\n")
+        writer.write(statsListener.getStats)
+      } finally {
+        writer.close()
+      }
+      log.info(s"Training statistics saved to $statsPath")
+    } catch {
+      case e: Exception =>
+        log.error(s"Failed to save training statistics to $statsPath", e)
+        throw e
+    }
+
+    // Construct proper path for model file
+    val modelPathObj = if (isLocal) {
+      val absolutePath = Paths.get(modelPath).toAbsolutePath
+      new Path(s"file://$absolutePath")
+    } else {
+      new Path(s"hdfs:///$modelPath")
+    }
+
+    try {
+      val outputStream = fs.create(modelPathObj)
+      try {
+        ModelSerializer.writeModel(network, outputStream, true)
+      } finally {
+        outputStream.close()
+      }
+      log.info(s"Model saved at: $modelPath")
+    } catch {
+      case e: Exception =>
+        log.error(s"Failed to save model to $modelPath", e)
+        throw e
+    }
 
     // Stop Spark session
     spark.stop()
